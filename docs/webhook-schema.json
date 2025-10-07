@@ -1,0 +1,9 @@
+{
+  "lead_id": "abc123",
+  "timestamp": "2025-10-08T00:07:00Z",
+  "source": "landing_page",
+  "client_name": "Jane Doe",
+  "service_type": "wellness_consultation",
+  "payment_status": "confirmed",
+  "dispatch_required": true
+}
