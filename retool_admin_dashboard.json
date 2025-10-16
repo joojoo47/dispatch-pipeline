@@ -1,0 +1,271 @@
+{
+  "version": "2.95.13",
+  "appTemplate": {
+    "appId": "retool_admin_dashboard",
+    "experimentalDataTabEnabled": false,
+    "isGlobalWidgetEnabled": false,
+    "isMobileApp": false,
+    "isReleaseNotesModalEnabled": false,
+    "experimentalFeaturesEnabled": false,
+    "folderId": null,
+    "pageLoadValueInputs": [],
+    "viewport": {
+      "height": 0,
+      "width": 0
+    },
+    "resources": {
+      "postgres1": {
+        "name": "postgres1",
+        "type": "POSTGRES",
+        "configuration": {
+          "host": "n8n-db-pristine.internal",
+          "port": "5432",
+          "databaseName": "n8n_dispatch",
+          "databaseUsername": "retool_readonly",
+          "databasePassword": "{{ RETOOL_DB_PASSWORD }}",
+          "ssl": true
+        }
+      }
+    },
+    "pages": [
+      {
+        "id": "admin-dashboard",
+        "name": "Admin Dashboard",
+        "folderId": null,
+        "pageLayout": "fixed",
+        "disableTitle": false,
+        "components": [
+          {
+            "id": "escalation-queue-table",
+            "type": "table",
+            "properties": {
+              "title": "🚨 Escalation Queue (PECR/PSR Compliance)",
+              "data": "{{ escalationQueueQuery.data }}",
+              "columns": [
+                {
+                  "id": "id",
+                  "title": "Job ID",
+                  "type": "number"
+                },
+                {
+                  "id": "phone",
+                  "title": "Phone",
+                  "type": "string"
+                },
+                {
+                  "id": "status",
+                  "title": "Status",
+                  "type": "string"
+                },
+                {
+                  "id": "consent_status",
+                  "title": "Consent Status",
+                  "type": "string"
+                },
+                {
+                  "id": "created_at",
+                  "title": "Created",
+                  "type": "datetime"
+                },
+                {
+                  "id": "actions",
+                  "title": "Actions",
+                  "type": "button"
+                }
+              ],
+              "actions": [
+                {
+                  "event": "clickRow",
+                  "type": "datasource",
+                  "method": "trigger",
+                  "datasourceId": "escalationQueueQuery",
+                  "requiresConfirmation": false
+                }
+              ]
+            },
+            "position": {
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 6
+            }
+          },
+          {
+            "id": "audit-trail-table",
+            "type": "table",
+            "properties": {
+              "title": "📋 Audit Trail (Immutable PECR/PSR Proof)",
+              "data": "{{ auditTrailQuery.data }}",
+              "columns": [
+                {
+                  "id": "id",
+                  "title": "Audit ID",
+                  "type": "number"
+                },
+                {
+                  "id": "event_type",
+                  "title": "Event Type",
+                  "type": "string"
+                },
+                {
+                  "id": "contact_id",
+                  "title": "Contact ID",
+                  "type": "string"
+                },
+                {
+                  "id": "message_body",
+                  "title": "Message",
+                  "type": "string"
+                },
+                {
+                  "id": "channel",
+                  "title": "Channel",
+                  "type": "string"
+                },
+                {
+                  "id": "is_sandbox",
+                  "title": "Sandbox",
+                  "type": "boolean"
+                },
+                {
+                  "id": "created_at",
+                  "title": "Timestamp",
+                  "type": "datetime"
+                }
+              ],
+              "filterable": true,
+              "sortable": true
+            },
+            "position": {
+              "x": 0,
+              "y": 6,
+              "width": 12,
+              "height": 6
+            }
+          },
+          {
+            "id": "manual-override-section",
+            "type": "container",
+            "properties": {
+              "title": "🔧 Manual Override (Secured)",
+              "components": [
+                {
+                  "id": "job-id-input",
+                  "type": "textInput",
+                  "properties": {
+                    "label": "Job ID",
+                    "placeholder": "Enter job ID to override"
+                  }
+                },
+                {
+                  "id": "override-consent-btn",
+                  "type": "button",
+                  "properties": {
+                    "text": "Override: CONSENT GIVEN (PECR)",
+                    "style": "primary",
+                    "disabled": "{{ !jobIdInput.value }}"
+                  },
+                  "events": [
+                    {
+                      "event": "click",
+                      "type": "datasource",
+                      "method": "trigger",
+                      "datasourceId": "overrideConsentQuery"
+                    }
+                  ]
+                },
+                {
+                  "id": "override-payment-btn",
+                  "type": "button",
+                  "properties": {
+                    "text": "Override: MARK PAID (PSR)",
+                    "style": "warning",
+                    "disabled": "{{ !jobIdInput.value }}"
+                  },
+                  "events": [
+                    {
+                      "event": "click",
+                      "type": "datasource",
+                      "method": "trigger",
+                      "datasourceId": "overridePaymentQuery"
+                    }
+                  ]
+                }
+              ]
+            },
+            "position": {
+              "x": 0,
+              "y": 12,
+              "width": 12,
+              "height": 4
+            }
+          }
+        ],
+        "queries": [
+          {
+            "id": "escalationQueueQuery",
+            "name": "escalationQueueQuery",
+            "query": "SELECT id, phone, status, consent_status, created_at FROM jobs WHERE status IN ('PENDING_CONSENT', 'PAYMENT_FAILED') OR consent_status = 'PENDING' ORDER BY created_at DESC;",
+            "datasourceId": "postgres1",
+            "queryType": "SQL",
+            "queryTimeout": 10000,
+            "enableCaching": false,
+            "cacheDuration": null,
+            "transformation": "return data;",
+            "runWhenModelUpdates": true,
+            "runWhenPageLoads": true
+          },
+          {
+            "id": "auditTrailQuery",
+            "name": "auditTrailQuery",
+            "query": "SELECT id, event_type, contact_id, message_body, channel, is_sandbox, created_at FROM audit_ledger ORDER BY created_at DESC LIMIT 100;",
+            "datasourceId": "postgres1",
+            "queryType": "SQL",
+            "queryTimeout": 10000,
+            "enableCaching": false,
+            "cacheDuration": null,
+            "transformation": "return data;",
+            "runWhenModelUpdates": false,
+            "runWhenPageLoads": true
+          },
+          {
+            "id": "overrideConsentQuery",
+            "name": "overrideConsentQuery",
+            "query": "UPDATE jobs SET consent_status = 'GIVEN', consent_timestamp = NOW(), status = 'New' WHERE id = {{ jobIdInput.value }} AND consent_status = 'PENDING'; SELECT write_audit({{ jobIdInput.value }}, 'admin_override', 'consent_override', 'consent_given_via_admin_override', 'Manual PECR consent override by admin');",
+            "datasourceId": "postgres1",
+            "queryType": "SQL",
+            "queryTimeout": 10000,
+            "enableCaching": false,
+            "cacheDuration": null,
+            "transformation": "return data;",
+            "runWhenModelUpdates": false,
+            "runWhenPageLoads": false,
+            "confirmationMessage": "Are you sure you want to manually override consent for this job? This action will be audited."
+          },
+          {
+            "id": "overridePaymentQuery",
+            "name": "overridePaymentQuery",
+            "query": "UPDATE jobs SET status = 'Paid' WHERE id = {{ jobIdInput.value }} AND status = 'PAYMENT_FAILED'; SELECT write_audit({{ jobIdInput.value }}, 'admin_override', 'payment_override', 'payment_completed_via_admin_override', 'Manual PSR payment override by admin');",
+            "datasourceId": "postgres1",
+            "queryType": "SQL",
+            "queryTimeout": 10000,
+            "enableCaching": false,
+            "cacheDuration": null,
+            "transformation": "return data;",
+            "runWhenModelUpdates": false,
+            "runWhenPageLoads": false,
+            "confirmationMessage": "Are you sure you want to manually mark this payment as completed? This action will be audited."
+          }
+        ]
+      }
+    ],
+    "customCSS": "",
+    "customJS": "",
+    "environments": [
+      {
+        "name": "production",
+        "baseUrl": ""
+      }
+    ]
+  }
+}

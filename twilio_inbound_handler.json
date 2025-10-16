@@ -1,0 +1,141 @@
+{
+  "name": "Twilio Inbound PII Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inbound-lead-message",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse & Redact PII for Twilio Inbound Messages\n// GDPR compliance for phone number isolation\n\nconst SQUARE_BASE_URL = $env.SQUARE_BASE_URL || 'https://connect.squareup.com';\n\n// Determine if this is sandbox (based on SQUARE_BASE_URL containing sandbox)\nconst is_sandbox = SQUARE_BASE_URL.includes('sandbox');\n\n// Get the raw Twilio payload\nconst payload = $json;\n\n// Redact PII for sandbox environments (GDPR compliance)\nlet audit_payload = payload;\nif (is_sandbox) {\n  // Redact phone number and any other PII\n  audit_payload = {\n    ...payload,\n    From: '[REDACTED_SANDBOX_PHONE]',\n    To: '[REDACTED_SANDBOX_TO]',\n    // Keep message content for processing but redact identifiers\n    Body: payload.Body // Keep message for business logic\n  };\n}\n\nreturn {\n  payload: audit_payload,\n  original_payload: payload,\n  is_sandbox,\n  message_body: payload.Body,\n  from_number: is_sandbox ? '[REDACTED]' : payload.From,\n  to_number: is_sandbox ? '[REDACTED]' : payload.To\n};"
+      },
+      "name": "Function: Parse & Redact PII",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "audit_ledger",
+        "columns": "event_type,contact_id,message_body,channel,is_sandbox,raw_payload",
+        "values": "={{ 'twilio_inbound' }},={{ $node['Function: Parse & Redact PII'].json.from_number }},={{ $node['Function: Parse & Redact PII'].json.message_body }},={{ 'sms' }},={{ $node['Function: Parse & Redact PII'].json.is_sandbox }},={{ JSON.stringify($node['Function: Parse & Redact PII'].json.payload) }}"
+      },
+      "name": "Audit: Log Inbound Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO jobs (phone, status, consent_status, is_first_contact, created_at) VALUES ($1, 'PENDING_CONSENT', 'PENDING', TRUE, NOW()) ON CONFLICT (phone) DO UPDATE SET status = 'PENDING_CONSENT', consent_status = 'PENDING' WHERE jobs.status != 'Paid' RETURNING job_id;",
+        "queryParametersUi": {
+          "parameter": [
+            { "name": "$1", "value": "={{ $node['Function: Parse & Redact PII'].json.original_payload.From }}" }
+          ]
+        }
+      },
+      "name": "Postgres: Create/Update Job with Consent Lock",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{{$credentials.twilio.accountSid}}/Messages.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": []
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameter": [
+            {
+              "name": "To",
+              "value": "={{ $node['Function: Parse & Redact PII'].json.original_payload.From }}"
+            },
+            {
+              "name": "From",
+              "value": "={{ $node['Function: Parse & Redact PII'].json.original_payload.To }}"
+            },
+            {
+              "name": "Body",
+              "value": "Reply CONFIRM to accept communications or STOP to opt out. This is required for PECR/GDPR compliance."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Twilio: Send Consent Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "credentials": {
+        "httpBasicAuth": {
+          "accountSid": "={{ $credentials.twilio.accountSid }}",
+          "authToken": "={{ $credentials.twilio.authToken }}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Function: Parse & Redact PII",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function: Parse & Redact PII": {
+      "main": [
+        [
+          {
+            "node": "Audit: Log Inbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audit: Log Inbound Message": {
+      "main": [
+        [
+          {
+            "node": "Postgres: Create/Update Job with Consent Lock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres: Create/Update Job with Consent Lock": {
+      "main": [
+        [
+          {
+            "node": "Twilio: Send Consent Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null
+}

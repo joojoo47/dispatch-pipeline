@@ -1,0 +1,134 @@
+{
+  "name": "Twilio_Consent_Reply_Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inbound-consent-reply",
+        "options": {}
+      },
+      "name": "Webhook: Receive Consent Reply",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "position": [240, 200],
+      "notesInFlow": "Twilio/WhatsApp webhook for ALL inbound replies."
+    },
+    {
+      "parameters": {
+        "functionCode": [
+          "// 1. Parse Reply and Determine Status",
+          "const senderPhone = $input.item.json.From || '';",
+          "const replyBody = ($input.item.json.Body || '').toUpperCase().trim();",
+          "",
+          "let consentStatus = 'DENIED'; // Default denial for unparsable/STOP messages",
+          "let isActionable = false;",
+          "",
+          "if (replyBody.includes('CONFIRM') || replyBody.includes('YES') || replyBody.includes('Y')) {",
+          "  consentStatus = 'GIVEN';",
+          "  isActionable = true;",
+          "} else if (replyBody.includes('STOP') || replyBody.includes('NO')) {",
+          "  consentStatus = 'DENIED';",
+          "  isActionable = true;",
+          "}",
+          "",
+          "return [{ json: { senderPhone, consentStatus, isActionable, replyBody } }];"
+        ]
+      },
+      "name": "Function: Parse Reply Status",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [480, 200],
+      "notesInFlow": "Tolerant parsing for CONFIRM/YES (GIVEN) or STOP/NO (DENIED)."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.isActionable}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "name": "If Actionable Reply (GIVEN/DENIED)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [720, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE jobs SET consent_status = $2, consent_timestamp = NOW(), status = 'New' WHERE job_id = (SELECT job_id FROM jobs WHERE phone = $1 AND consent_status = 'PENDING' ORDER BY created_at DESC LIMIT 1) RETURNING job_id;",
+        "queryParametersUi": {
+          "parameter": [
+            { "name": "$1", "value": "={{$json.senderPhone}}" },
+            { "name": "$2", "value": "={{$json.consentStatus}}" }
+          ]
+        },
+        "nodeSelect": "id",
+        "credential": "PostgresJobsDB"
+      },
+      "name": "Postgres: Update Consent Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [960, 120],
+      "notesInFlow": "SECURITY FIX: Targets ONLY the most recent PENDING job for this phone to prevent replay attacks and incorrect status updates. If GIVEN, sets job status back to 'New' to unblock dispatch."
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT write_audit($1, $2, $3, $4, $5);",
+        "queryParametersUi": {
+          "parameter": [
+            { "name": "$1", "value": "={{$node['Postgres: Update Consent Status'].json[0].job_id}}" },
+            { "name": "$2", "value": "customer_comms" },
+            { "name": "$3", "value": "consent_status_updated" },
+            { "name": "$4", "value": "={{ 'consent_' + $json.consentStatus.toLowerCase() + '_via_whatsapp' }}" },
+            { "name": "$5", "value": "={{JSON.stringify({phone: $json.senderPhone, new_status: $json.consentStatus, raw_reply: $json.replyBody})}}" }
+          ]
+        },
+        "nodeSelect": "id",
+        "credential": "PostgresJobsDB"
+      },
+      "name": "Audit: Log Final Consent Status (PECR)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1200, 120],
+      "notesInFlow": "MANDATORY: Logs immutable proof of customer consent/denial."
+    },
+    {
+      "parameters": {
+        "functionCode": [
+          "// ⚠️ Add logic here to notify the Admin if consent was DENIED (Job is dead).",
+          "// If GIVEN, the job status update is sufficient to trigger the next dispatch workflow.",
+          "return [{ json: { status: 'COMPLETE' } }];"
+        ]
+      },
+      "name": "Function: Handle Denial/Completion",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1440, 120]
+    }
+  ],
+  "connections": {
+    "Webhook: Receive Consent Reply": [
+      ["Function: Parse Reply Status"]
+    ],
+    "Function: Parse Reply Status": [
+      ["If Actionable Reply (GIVEN/DENIED)?"]
+    ],
+    "If Actionable Reply (GIVEN/DENIED)?": [
+      ["Postgres: Update Consent Status"],
+      []
+    ],
+    "Postgres: Update Consent Status": [
+      ["Audit: Log Final Consent Status (PECR)"]
+    ],
+    "Audit: Log Final Consent Status (PECR)": [
+      ["Function: Handle Denial/Completion"]
+    ]
+  }
+}
