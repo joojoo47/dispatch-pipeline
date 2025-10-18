@@ -35,9 +35,10 @@
    Port: 5432
    Database: n8n_dispatch
    Username: retool_readonly
-   Password: SecurePass2025!@#
+  Password: <your-password>
    SSL Mode: require
    ```
+  Tip: Avoid hard-coding credentials in docs. Store the password securely (e.g., in Retool's encrypted Resource settings or a secrets manager), and rotate it periodically.
 4. Click **Test connection** → **Create resource**
 
 ### Step 2: Create App (1 minute)
