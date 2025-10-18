@@ -1,0 +1,14 @@
+{
+  "uuid": "compliance-dashboard-v1",
+  "page": {
+    "id": 1,
+    "data": {
+      "appState": "[\"~#iR\",[\"^ \",\"n\",\"appTemplate\",\"v\",[\"^ \",\"appMaxWidth\",\"100%\",\"pageLoadValueOverrides\",[\"~#iL\",[]]]]"
+    },
+    "changesRecord": [{"type": "CREATE_APP"}],
+    "changesRecordV2": [{"data": {"value": "Created PECR/PSR Compliance Dashboard"}, "type": "simpleupdate", "version": 1}],
+    "createdAt": "2025-10-18T00:00:00.000Z",
+    "updatedAt": "2025-10-18T00:00:00.000Z"
+  },
+  "modules": {}
+}
