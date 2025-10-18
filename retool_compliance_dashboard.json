@@ -1,0 +1,183 @@
+{
+  "dashboard_name": "PECR/PSR Compliance Dashboard",
+  "version": "1.0.0",
+  "database_connection": {
+    "type": "postgresql",
+    "host": "{{POSTGRES_HOST}}",
+    "port": 5432,
+    "database": "n8n_dispatch",
+    "user": "retool_readonly",
+    "password": "{{RETOOL_DB_PASSWORD}}",
+    "ssl_mode": "require"
+  },
+  "queries": {
+    "escalation_queue": {
+      "name": "PECR Escalation Queue",
+      "description": "Real-time view of jobs awaiting consent (PECR Reg. 22 compliance lock)",
+      "type": "SELECT",
+      "sql": "SELECT \n  id,\n  job_id,\n  phone,\n  status,\n  consent_status,\n  is_first_contact,\n  created_at,\n  consent_timestamp,\n  CASE \n    WHEN consent_status = 'PENDING' AND created_at < NOW() - INTERVAL '48 hours' THEN 'CRITICAL'\n    WHEN consent_status = 'PENDING' AND created_at < NOW() - INTERVAL '24 hours' THEN 'HIGH'\n    ELSE 'NORMAL'\n  END as escalation_priority\nFROM jobs\nWHERE consent_status = 'PENDING'\nORDER BY created_at ASC\nLIMIT 100;",
+      "permissions": "READ_ONLY",
+      "refresh_interval": "30s"
+    },
+    "audit_trail": {
+      "name": "Immutable Audit Ledger",
+      "description": "Complete audit trail of all system events (READ-ONLY)",
+      "type": "SELECT",
+      "sql": "SELECT \n  id,\n  event_type,\n  contact_id,\n  LEFT(message_body, 100) as message_preview,\n  channel,\n  is_sandbox,\n  created_at\nFROM audit_ledger\nORDER BY created_at DESC\nLIMIT 500;",
+      "permissions": "READ_ONLY",
+      "refresh_interval": "60s"
+    },
+    "consent_override": {
+      "name": "Manual Override: CONSENT_GIVEN",
+      "description": "Admin action to manually mark consent as GIVEN (logged to audit)",
+      "type": "UPDATE",
+      "sql": "UPDATE jobs\nSET \n  consent_status = 'GIVEN',\n  consent_timestamp = NOW()\nWHERE id = {{selected_job_id}}\nRETURNING id, job_id, phone, consent_status, consent_timestamp;",
+      "permissions": "AUDITABLE_WRITE",
+      "trigger": "button_click",
+      "audit_log": true
+    },
+    "denial_override": {
+      "name": "Manual Override: CONSENT_DENIED",
+      "description": "Admin action to manually mark consent as DENIED (logged to audit)",
+      "type": "UPDATE",
+      "sql": "UPDATE jobs\nSET \n  consent_status = 'DENIED',\n  consent_timestamp = NOW()\nWHERE id = {{selected_job_id}}\nRETURNING id, job_id, phone, consent_status, consent_timestamp;",
+      "permissions": "AUDITABLE_WRITE",
+      "trigger": "button_click",
+      "audit_log": true
+    },
+    "payment_confirmation": {
+      "name": "Manual Override: MARK_PAID (PSR Compliance)",
+      "description": "Admin confirms payment received (bank transfer, cash, etc.)",
+      "type": "UPDATE",
+      "sql": "UPDATE jobs\nSET \n  status = 'Paid',\n  consent_status = 'GIVEN'\nWHERE id = {{selected_job_id}}\nRETURNING id, job_id, phone, status;",
+      "permissions": "AUDITABLE_WRITE",
+      "trigger": "button_click",
+      "audit_log": true
+    },
+    "dashboard_stats": {
+      "name": "Compliance Statistics",
+      "description": "Real-time compliance metrics",
+      "type": "SELECT",
+      "sql": "SELECT \n  COUNT(*) FILTER (WHERE consent_status = 'PENDING') as pending_consent,\n  COUNT(*) FILTER (WHERE consent_status = 'GIVEN') as consent_given,\n  COUNT(*) FILTER (WHERE consent_status = 'DENIED') as consent_denied,\n  COUNT(*) FILTER (WHERE consent_status = 'PENDING' AND created_at < NOW() - INTERVAL '48 hours') as critical_escalations,\n  COUNT(*) as total_jobs\nFROM jobs;",
+      "permissions": "READ_ONLY",
+      "refresh_interval": "60s"
+    },
+    "job_details": {
+      "name": "Job Detail View",
+      "description": "Full details for selected job",
+      "type": "SELECT",
+      "sql": "SELECT \n  j.*,\n  (\n    SELECT COUNT(*) \n    FROM audit_ledger a \n    WHERE a.contact_id = j.job_id\n  ) as audit_event_count\nFROM jobs j\nWHERE j.id = {{selected_job_id}};",
+      "permissions": "READ_ONLY"
+    },
+    "job_audit_history": {
+      "name": "Job-Specific Audit History",
+      "description": "All audit events for selected job",
+      "type": "SELECT",
+      "sql": "SELECT \n  id,\n  event_type,\n  message_body,\n  channel,\n  created_at\nFROM audit_ledger\nWHERE contact_id = (\n  SELECT job_id FROM jobs WHERE id = {{selected_job_id}}\n)\nORDER BY created_at DESC;",
+      "permissions": "READ_ONLY"
+    }
+  },
+  "ui_components": {
+    "escalation_table": {
+      "query": "escalation_queue",
+      "columns": [
+        "job_id",
+        "phone",
+        "status",
+        "consent_status",
+        "created_at",
+        "escalation_priority"
+      ],
+      "row_selection": "single",
+      "row_action_buttons": [
+        {
+          "label": "✅ Grant Consent",
+          "query": "consent_override",
+          "confirmation": "Are you sure you want to manually grant consent? This action is AUDITABLE.",
+          "color": "green"
+        },
+        {
+          "label": "❌ Deny Consent",
+          "query": "denial_override",
+          "confirmation": "Are you sure you want to mark consent as DENIED? This will block all future communications.",
+          "color": "red"
+        }
+      ]
+    },
+    "audit_trail_table": {
+      "query": "audit_trail",
+      "columns": [
+        "id",
+        "event_type",
+        "contact_id",
+        "message_preview",
+        "channel",
+        "created_at"
+      ],
+      "read_only": true
+    },
+    "stats_panel": {
+      "query": "dashboard_stats",
+      "display_type": "metrics_cards",
+      "cards": [
+        {
+          "label": "⏳ Pending Consent",
+          "value": "{{dashboard_stats.data.pending_consent}}",
+          "color": "orange"
+        },
+        {
+          "label": "✅ Consent Given",
+          "value": "{{dashboard_stats.data.consent_given}}",
+          "color": "green"
+        },
+        {
+          "label": "❌ Consent Denied",
+          "value": "{{dashboard_stats.data.consent_denied}}",
+          "color": "red"
+        },
+        {
+          "label": "🚨 Critical Escalations",
+          "value": "{{dashboard_stats.data.critical_escalations}}",
+          "color": "red"
+        }
+      ]
+    }
+  },
+  "security_constraints": {
+    "retool_readonly_permissions": {
+      "SELECT": [
+        "jobs",
+        "audit_ledger"
+      ],
+      "UPDATE": [
+        "jobs"
+      ],
+      "DELETE": [],
+      "INSERT": []
+    },
+    "audit_ledger_immutability": {
+      "enforcement": "Database-level permissions prevent UPDATE/DELETE on audit_ledger",
+      "verification": "SELECT privilege_type FROM information_schema.role_table_grants WHERE grantee='retool_readonly' AND table_name='audit_ledger';"
+    },
+    "least_privilege_principle": {
+      "status": "ENFORCED",
+      "details": "retool_readonly cannot modify audit_ledger, cannot delete jobs, cannot access raw credentials"
+    }
+  },
+  "deployment_checklist": [
+    "✅ PostgreSQL user 'retool_readonly' created with password",
+    "✅ GRANT SELECT on audit_ledger (read-only)",
+    "✅ GRANT SELECT, UPDATE on jobs (for overrides only)",
+    "⚠️ Configure Retool data source connection",
+    "⚠️ Import queries into Retool app",
+    "⚠️ Link UI components to queries",
+    "⚠️ Test audit logging for manual overrides",
+    "⚠️ Verify retool_readonly CANNOT modify audit_ledger"
+  ],
+  "regulatory_justification": {
+    "PECR_Reg_22": "Escalation queue provides visibility into consent lock, preventing accidental PECR violations",
+    "PSR_2017": "Manual payment confirmation creates auditable trail for non-Square payments (bank transfers, cash)",
+    "ICO_Accountability": "Immutable audit ledger demonstrates due diligence in consent management",
+    "Least_Privilege": "retool_readonly user cannot tamper with historical audit data"
+  }
+}

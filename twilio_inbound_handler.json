@@ -51,6 +51,22 @@
     },
     {
       "parameters": {
+        "model": "={{ $env.GEMINI_MODEL || 'gemini-1.5-flash' }}",
+        "prompt": "You are an AI assistant for PECR/GDPR compliant communication. Generate a personalized consent request message based on the user's inbound message. The message must comply with PECR regulations and ask for explicit consent to continue communications. Keep it professional and concise.\n\nUser's inbound message: {{ $node['Function: Parse & Redact PII'].json.message_body }}\n\nGenerate a consent request message.",
+        "options": {}
+      },
+      "name": "Google Gemini: Generate Consent Message",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [1000, 300],
+      "credentials": {
+        "googleGeminiApi": {
+          "apiKey": "={{ $env.GOOGLE_API_KEY }}"
+        }
+      }
+    },
+    {
+      "parameters": {
         "httpMethod": "POST",
         "url": "https://api.twilio.com/2010-04-01/Accounts/{{$credentials.twilio.accountSid}}/Messages.json",
         "authentication": "genericCredentialType",
@@ -72,7 +88,7 @@
             },
             {
               "name": "Body",
-              "value": "Reply CONFIRM to accept communications or STOP to opt out. This is required for PECR/GDPR compliance."
+              "value": "={{ $node['Google Gemini: Generate Consent Message'].json.candidates[0].content.parts[0].text }}"
             }
           ]
         },
@@ -81,7 +97,7 @@
       "name": "Twilio: Send Consent Request",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 1,
-      "position": [1120, 300],
+      "position": [1220, 300],
       "credentials": {
         "httpBasicAuth": {
           "accountSid": "={{ $credentials.twilio.accountSid }}",
@@ -125,6 +141,17 @@
       ]
     },
     "Postgres: Create/Update Job with Consent Lock": {
+      "main": [
+        [
+          {
+            "node": "Google Gemini: Generate Consent Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini: Generate Consent Message": {
       "main": [
         [
           {
