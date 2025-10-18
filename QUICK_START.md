@@ -1,5 +1,19 @@
 # 🚀 PECR/PSR Compliance Dashboard - Quick Start
 
+## ⚠️ Prerequisites
+
+**Before building the dashboard, you MUST set up the database:**
+
+👉 **See [DATABASE_SETUP_GUIDE.md](./DATABASE_SETUP_GUIDE.md)** for detailed instructions
+
+**Quick summary:**
+1. Connect to your PostgreSQL database (external or local)
+2. Run `./setup_retool_dashboard.sh` with the correct environment variables
+3. Verify tables `jobs` and `audit_ledger` exist
+4. Then proceed with the dashboard setup below
+
+---
+
 ## ⚠️ Import Error Fix
 
 **Error:** `Cannot read properties of undefined (reading 'data')`  
