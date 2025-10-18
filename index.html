@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Weather Dashboard - Get current weather data for any location">
+    <title>Weather Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Weather Dashboard</h1>
+            <p class="subtitle">Get real-time weather updates for any location</p>
+        </header>
+
+        <main>
+            <!-- Search Section -->
+            <section class="search-section">
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        id="cityInput" 
+                        placeholder="Enter city name (e.g., London, New York)"
+                        aria-label="City search input"
+                    >
+                    <button id="searchBtn" aria-label="Search weather">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        Search
+                    </button>
+                    <button id="currentLocationBtn" aria-label="Use current location">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                        Current Location
+                    </button>
+                </div>
+                <div id="errorMessage" class="error-message" role="alert"></div>
+            </section>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="spinner"></div>
+                <p>Loading weather data...</p>
+            </div>
+
+            <!-- Weather Display Section -->
+            <section id="weatherDisplay" class="weather-display">
+                <div class="weather-header">
+                    <div class="location-info">
+                        <h2 id="cityName">--</h2>
+                        <p id="dateTime">--</p>
+                    </div>
+                    <div class="weather-icon-main">
+                        <img id="weatherIcon" src="" alt="Weather icon">
+                    </div>
+                </div>
+
+                <div class="temperature-section">
+                    <div class="temp-main">
+                        <span id="temperature">--</span>
+                        <span class="temp-unit">°C</span>
+                    </div>
+                    <div class="temp-details">
+                        <p id="weatherDescription">--</p>
+                        <div class="feels-like">
+                            Feels like <span id="feelsLike">--</span>°C
+                        </div>
+                    </div>
+                </div>
+
+                <div class="weather-details-grid">
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="detail-info">
+                            <p class="detail-label">Humidity</p>
+                            <p class="detail-value" id="humidity">--</p>
+                        </div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
+                            </svg>
+                        </div>
+                        <div class="detail-info">
+                            <p class="detail-label">Wind Speed</p>
+                            <p class="detail-value" id="windSpeed">--</p>
+                        </div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.5 2v19M3 8h11M3 16h11"></path>
+                            </svg>
+                        </div>
+                        <div class="detail-info">
+                            <p class="detail-label">Pressure</p>
+                            <p class="detail-value" id="pressure">--</p>
+                        </div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </div>
+                        <div class="detail-info">
+                            <p class="detail-label">Visibility</p>
+                            <p class="detail-value" id="visibility">--</p>
+                        </div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v10l4.7 4.7"></path>
+                                <circle cx="12" cy="12" r="10"></circle>
+                            </svg>
+                        </div>
+                        <div class="detail-info">
+                            <p class="detail-label">Sunrise</p>
+                            <p class="detail-value" id="sunrise">--</p>
+                        </div>
+                    </div>
+
+                    <div class="detail-card">
+                        <div class="detail-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 10V2l-4.7 4.7"></path>
+                                <circle cx="12" cy="12" r="10"></circle>
+                            </svg>
+                        </div>
+                        <div class="detail-info">
+                            <p class="detail-label">Sunset</p>
+                            <p class="detail-value" id="sunset">--</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Welcome Message (shown initially) -->
+            <section id="welcomeMessage" class="welcome-message">
+                <div class="welcome-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </div>
+                <h3>Welcome to Weather Dashboard</h3>
+                <p>Search for a city or use your current location to get started</p>
+            </section>
+        </main>
+
+        <footer>
+            <p>Powered by <a href="https://openweathermap.org/" target="_blank" rel="noopener noreferrer">OpenWeatherMap API</a></p>
+            <p class="api-note">API Key required - See README for setup instructions</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
