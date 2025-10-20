@@ -36,7 +36,7 @@ def get_db_connection():
             'port': 5432,
             'database': 'n8n_dispatch',
             'user': 'retool_readonly',
-            'password': 'SecurePass2025!@#',
+            'password': 'npg_1WF4oLEXJahs',
             'sslmode': 'require',
             'options': 'endpoint=ep-soft-wave-ab54c4oo-pooler'  # Required for Neon pooled connection
         }

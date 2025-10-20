@@ -17,7 +17,7 @@ Host: ep-soft-wave-ab54c4oo-pooler.eu-west-2.aws.neon.tech
 Port: 5432
 Database: n8n_dispatch
 Username: retool_readonly
-Password: SecurePass2025!@#
+Password: npg_1WF4oLEXJahs
 SSL Mode: require
 ```
 
@@ -29,7 +29,7 @@ Host: ep-soft-wave-ab54c4oo-pooler.eu-west-2.aws.neon.tech
 Port: 5432
 Database: n8n_dispatch
 Username: retool_writer
-Password: WriterPass2025!@#
+Password: npg_aT13fOEwpdhM
 SSL Mode: require
 ```
 
