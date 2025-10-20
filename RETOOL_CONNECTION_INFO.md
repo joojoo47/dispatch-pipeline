@@ -16,7 +16,7 @@ Name: postgres_readonly
 Host: ep-soft-wave-ab54c4oo-pooler.eu-west-2.aws.neon.tech
 Port: 5432
 Database: n8n_dispatch
-Username: retool_readonly
+Username: retool_readonly_sql
 Password: npg_1WF4oLEXJahs
 SSL Mode: require
 ```
@@ -42,14 +42,14 @@ SSL Mode: require
 - ✅ `audit_ledger` - 3 audit records
 
 **Users Created:**
-- ✅ `retool_readonly` - SELECT only on jobs, audit_ledger (for queries)
+- ✅ `retool_readonly_sql` - SELECT only on jobs, audit_ledger (for queries)
 - ✅ `retool_writer` - SELECT, UPDATE on jobs; INSERT on audit_ledger (for mutations)
 
 ---
 
 ## 🔐 Security Configuration
 
-**retool_readonly permissions:**
+**retool_readonly_sql permissions:**
 ```sql
 SELECT on jobs ✅
 SELECT on audit_ledger ✅
