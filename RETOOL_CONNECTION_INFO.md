@@ -2,7 +2,7 @@
 
 ## ✅ Database Setup Complete!
 
-Your PostgreSQL database is now running and ready for Retool.
+Your PostgreSQL database is now running on Neon and ready for Retool.
 
 ---
 
@@ -12,13 +12,25 @@ Use these settings when configuring the PostgreSQL resource in Retool:
 
 ```
 Resource Type: PostgreSQL
-Name: postgres_compliance
-Host: localhost  (or your dev container IP if Retool runs externally)
+Name: postgres_readonly
+Host: ep-soft-wave-ab54c4oo-pooler.eu-west-2.aws.neon.tech
 Port: 5432
 Database: n8n_dispatch
 Username: retool_readonly
 Password: SecurePass2025!@#
-SSL Mode: disable (for local development)
+SSL Mode: require
+```
+
+For the writer resource:
+```
+Resource Type: PostgreSQL
+Name: postgres_writer
+Host: ep-soft-wave-ab54c4oo-pooler.eu-west-2.aws.neon.tech
+Port: 5432
+Database: n8n_dispatch
+Username: retool_writer
+Password: WriterPass2025!@#
+SSL Mode: require
 ```
 
 ---
@@ -26,12 +38,12 @@ SSL Mode: disable (for local development)
 ## 📊 Database Status
 
 **Tables Created:**
-- ✅ `jobs` - 3 test records (2 PENDING, 1 GIVEN)
-- ✅ `audit_ledger` - 2 audit records
+- ✅ `jobs` - 5 test records (3 PENDING, 1 GIVEN, 1 DENIED)
+- ✅ `audit_ledger` - 3 audit records
 
 **Users Created:**
 - ✅ `retool_readonly` - SELECT only on jobs, audit_ledger (for queries)
-- ⚠️ You'll need a separate user with UPDATE permissions for the consent override mutation
+- ✅ `retool_writer` - SELECT, UPDATE on jobs; INSERT on audit_ledger (for mutations)
 
 ---
 
@@ -51,42 +63,33 @@ This enforces immutability for the audit trail and prevents unauthorized modific
 
 ## 🚀 Next Steps
 
-### 1. Configure Retool Resource
+### 1. Create Users on Fly.io Database
+Since the database is on Fly.io, you need to create the users there.
 
-In Retool:
-1. Go to **Resources** → **Create new** → **PostgreSQL**
-2. Use the connection details above
-3. Click **Test connection** → **Create resource**
-
-### 2. Update Query Resources
-
-For each query in your dashboard:
-- `escalationQueue`
-- `dashboardStats`
-- `auditTrail`
-- `consentOverride`
-
-Make sure the **Resource** dropdown points to `postgres_compliance`.
-
-### 3. Create Writer User (For Mutations)
-
-For the `consentOverride` mutation to work, you need a user with UPDATE permissions:
-
+**Connect to Fly.io Postgres:**
 ```bash
-docker exec -i postgres-compliance psql -U postgres -d n8n_dispatch << 'EOF'
-CREATE USER retool_writer WITH PASSWORD 'WriterPass2025!@#';
-GRANT CONNECT ON DATABASE n8n_dispatch TO retool_writer;
-GRANT USAGE ON SCHEMA public TO retool_writer;
-GRANT SELECT, UPDATE (consent_status, consent_timestamp) ON jobs TO retool_writer;
-GRANT INSERT ON audit_ledger TO retool_writer;
-EOF
+fly postgres connect -a n8n-db-pristine
 ```
 
-Then create a second PostgreSQL resource in Retool called `postgres_compliance_writer` with these credentials, and use it for the `consentOverride` query.
+**Run this SQL to create users:**
+```sql
+CREATE USER retool_readonly WITH PASSWORD 'SecurePass2025!@#';
+CREATE USER retool_writer WITH PASSWORD 'WriterPass2025!@#';
+```
 
-### 4. Test the Setup
+### 2. Run Schema Migration on Fly.io
+Apply the schema fix from `FLY_IO_DATABASE_FIX.md` to add tables and permissions.
 
-Run each query in Retool to verify:
+### 3. Configure Retool Resources
+In Retool, create two PostgreSQL resources using the details above.
+
+### 4. Update Query Resources
+For each query in your dashboard:
+- `escalationQueue`, `dashboardStats`, `auditTrail` → `postgres_readonly`
+- `consentOverride` → `postgres_writer`
+
+### 5. Test the Setup
+Run each query in Retool to verify.
 
 **escalationQueue:**
 ```sql
@@ -102,25 +105,7 @@ ORDER BY created_at ASC
 LIMIT 100;
 ```
 
-**dashboardStats:**
-```sql
-SELECT
-  COUNT(*) FILTER (WHERE consent_status = 'PENDING') as pending,
-  COUNT(*) FILTER (WHERE consent_status = 'GIVEN') as given,
-  COUNT(*) FILTER (WHERE consent_status = 'DENIED') as denied,
-  COUNT(*) as total
-FROM jobs;
-```
-
-**auditTrail:**
-```sql
-SELECT id, event_type, contact_id,
-  LEFT(message_body, 100) as message_preview,
-  channel, created_at
-FROM audit_ledger
-ORDER BY created_at DESC
-LIMIT 500;
-```
+Should return results without errors.
 
 ---
 
