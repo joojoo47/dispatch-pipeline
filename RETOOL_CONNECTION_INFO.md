@@ -63,33 +63,23 @@ This enforces immutability for the audit trail and prevents unauthorized modific
 
 ## 🚀 Next Steps
 
-### 1. Create Users on Fly.io Database
-Since the database is on Fly.io, you need to create the users there.
+### 1. Update Retool Resources
+Update your PostgreSQL resources in Retool with the Neon details above.
 
-**Connect to Fly.io Postgres:**
-```bash
-fly postgres connect -a n8n-db-pristine
-```
-
-**Run this SQL to create users:**
-```sql
-CREATE USER retool_readonly WITH PASSWORD 'SecurePass2025!@#';
-CREATE USER retool_writer WITH PASSWORD 'WriterPass2025!@#';
-```
-
-### 2. Run Schema Migration on Fly.io
-Apply the schema fix from `FLY_IO_DATABASE_FIX.md` to add tables and permissions.
-
-### 3. Configure Retool Resources
-In Retool, create two PostgreSQL resources using the details above.
-
-### 4. Update Query Resources
-For each query in your dashboard:
+### 2. Test Queries
+Assign queries to resources:
 - `escalationQueue`, `dashboardStats`, `auditTrail` → `postgres_readonly`
 - `consentOverride` → `postgres_writer`
 
-### 5. Test the Setup
-Run each query in Retool to verify.
+### 3. Verify Setup
+Run the escalation queue query to ensure data loads.
+
+### 4. Test Consent Override
+Follow the compliance verification tests below.
+
+### 5. Clean Up Fly.io (Optional)
+If not already done, delete the old Fly.io app `n8n-db-pristine` to avoid charges:
+- Run `fly apps destroy n8n-db-pristine` on your local machine.
 
 **escalationQueue:**
 ```sql
@@ -134,39 +124,29 @@ Once all queries are working:
 
 ## 🛠️ Useful Commands
 
-**View all jobs:**
+**View all jobs (via Neon):**
 ```bash
-docker exec -i postgres-compliance psql -U postgres -d n8n_dispatch -c "SELECT * FROM jobs;"
+psql "postgresql://neondb_owner:npg_4vSDZqJiOaC1@ep-soft-wave-ab54c4oo-pooler.eu-west-2.aws.neon.tech/n8n_dispatch?sslmode=require&options=endpoint%3Dep-soft-wave-ab54c4oo-pooler" -c "SELECT * FROM jobs;"
 ```
 
-**View audit trail:**
+**View audit trail (via Neon):**
 ```bash
-docker exec -i postgres-compliance psql -U postgres -d n8n_dispatch -c "SELECT * FROM audit_ledger ORDER BY created_at DESC;"
+psql "postgresql://neondb_owner:npg_4vSDZqJiOaC1@ep-soft-wave-ab54c4oo-pooler.eu-west-2.aws.neon.tech/n8n_dispatch?sslmode=require&options=endpoint%3Dep-soft-wave-ab54c4oo-pooler" -c "SELECT * FROM audit_ledger ORDER BY created_at DESC;"
 ```
 
-**Stop PostgreSQL:**
+**Connect to Neon for manual queries:**
 ```bash
-docker stop postgres-compliance
-```
-
-**Start PostgreSQL:**
-```bash
-docker start postgres-compliance
-```
-
-**Remove PostgreSQL (clean slate):**
-```bash
-docker rm -f postgres-compliance
+psql "postgresql://neondb_owner:npg_4vSDZqJiOaC1@ep-soft-wave-ab54c4oo-pooler.eu-west-2.aws.neon.tech/n8n_dispatch?sslmode=require&options=endpoint%3Dep-soft-wave-ab54c4oo-pooler"
 ```
 
 ---
 
 ## 📝 Notes
 
-- Database is running locally in Docker on port 5432
-- Data persists as long as the container exists
-- If you remove the container, all data will be lost (use volumes for persistence)
-- For production, use a managed PostgreSQL service (AWS RDS, Fly.io Postgres, etc.)
+- Database is running on Neon (managed PostgreSQL) in AWS Europe West 2.
+- Data persists automatically with Neon's backup and restore features.
+- For production scaling, monitor compute usage in Neon dashboard.
+- Migrated from Fly.io due to instability; Neon provides better reliability.
 
 ---
 
