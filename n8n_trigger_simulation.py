@@ -37,8 +37,7 @@ def get_db_connection():
             'database': 'n8n_dispatch',
             'user': 'retool_readonly_sql',
             'password': 'npg_1WF4oLEXJahs',
-            'sslmode': 'require',
-            'options': 'endpoint=ep-soft-wave-ab54c4oo-pooler'  # Required for Neon pooled connection
+            'sslmode': 'require'
         }
 
 def query_jobs():
