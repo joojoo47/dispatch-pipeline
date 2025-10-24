@@ -1,0 +1,137 @@
+{
+  "name": "Automated Volume Cleanup",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.fly.io/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $secrets.FLY_API_TOKEN || $env.FLY_API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "query { apps { nodes { id name volumes { nodes { id name region sizeGb state attachedAllocation { id app { name } } } } } } }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "List Volumes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [240, 300],
+      "notesInFlow": "Fetch all volumes from Fly.io apps using updated GraphQL schema"
+    },
+    {
+      "parameters": {
+        "functionCode": [
+          "// Check if the response has data or errors",
+          "const response = $input.all()[0].json;",
+          "if (!response.data) {",
+          "  return [{ json: { error: response } }];",
+          "}",
+          "",
+          "// Flatten volumes from all apps",
+          "const allVolumes = $input.all()",
+          "  .map(item => item.json.data.apps.nodes)",
+          "  .flat()",
+          "  .map(app => app.volumes.nodes)",
+          "  .flat();",
+          "",
+          "// Filter for orphaned volumes (no attachedAllocation means orphaned)",
+          "const orphanedVolumes = allVolumes.filter(volume => !volume.attachedAllocation);",
+          "",
+          "// Return clean list of orphaned volumes",
+          "return orphanedVolumes.map(volume => ({",
+          "  json: {",
+          "    volumeId: volume.id,",
+          "    volumeName: volume.name,",
+          "    region: volume.region,",
+          "    sizeGb: volume.sizeGb,",
+          "    state: volume.state,",
+          "    appName: volume.attachedAllocation?.app?.name || 'orphaned'",
+          "  }",
+          "}));"
+        ]
+      },
+      "name": "Filter Orphaned Volumes",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [480, 300],
+      "notesInFlow": "Filter volumes to find orphaned ones (no attachedAllocation)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.fly.io/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $secrets.FLY_API_TOKEN || $env.FLY_API_TOKEN || $credentials.flyApiToken }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "mutation { deleteVolume(input: { volumeId: \"{{$json.volumeId}}\" }) { volume { id } } }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Delete Orphaned Volumes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [720, 300],
+      "notesInFlow": "Delete each orphaned volume using Fly.io GraphQL mutation"
+    }
+  ],
+  "connections": {
+    "List Volumes": {
+      "main": [
+        [
+          {
+            "node": "Filter Orphaned Volumes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Orphaned Volumes": {
+      "main": [
+        [
+          {
+            "node": "Delete Orphaned Volumes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null
+}
