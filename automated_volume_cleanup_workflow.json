@@ -19,23 +19,15 @@
           ]
         },
         "sendBody": true,
-        "specifyBody": "json",
         "bodyParameters": {
           "parameters": [
             {
               "name": "query",
-              "value": "query { volumes { nodes { id name region sizeGb state createdAt attachedAllocation { id app { name } } } } }"
+              "value": "query { apps { nodes { id name volumes { nodes { id name region sizeGb state attachedAllocation { id app { name } } } } } } }"
             }
           ]
         },
-        "options": {
-          "response": {
-            "response": {
-              "responseFormat": "json",
-              "dataProperty": "data.volumes.nodes"
-            }
-          }
-        }
+        "options": {}
       },
       "name": "List Volumes",
       "type": "n8n-nodes-base.httpRequest",
@@ -46,18 +38,32 @@
     {
       "parameters": {
         "functionCode": [
-          "// Filter volumes that are unattached (orphaned)",
-          "const orphanedVolumes = $input.all().filter(volume => !volume.json.attachedAllocation);",
+          "// Check if input has JSON",
+          "const inputItem = $input.all()[0];",
+          "if (!inputItem || !inputItem.json) {",
+          "  return [{ json: { error: 'No JSON response from API' } }];",
+          "}",
+          "// Check if the response has data",
+          "const response = inputItem.json;",
+          "if (!response.data || !response.data.apps || !response.data.apps.nodes) {",
+          "  return [{ json: { error: 'Invalid API response structure', response } }];",
+          "}",
+          "// Safely flatten volumes from all apps",
+          "const allVolumes = response.data.apps.nodes",
+          "  .filter(app => app && app.volumes && app.volumes.nodes)",
+          "  .map(app => app.volumes.nodes)",
+          "  .flat();",
+          "// Filter for orphaned volumes",
+          "const orphanedVolumes = allVolumes.filter(volume => volume && !volume.attachedAllocation);",
           "// Return clean list of orphaned volumes",
           "return orphanedVolumes.map(volume => ({",
           "  json: {",
-          "    volumeId: volume.json.id,",
-          "    volumeName: volume.json.name,",
-          "    region: volume.json.region,",
-          "    sizeGb: volume.json.sizeGb,",
-          "    state: volume.json.state,",
-          "    createdAt: volume.json.createdAt,",
-          "    appName: 'orphaned'",
+          "    volumeId: volume.id,",
+          "    volumeName: volume.name,",
+          "    region: volume.region,",
+          "    sizeGb: volume.sizeGb,",
+          "    state: volume.state,",
+          "    appName: volume.attachedAllocation?.app?.name || 'orphaned'",
           "  }",
           "}));"
         ]
