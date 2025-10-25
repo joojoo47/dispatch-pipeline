@@ -2,6 +2,13 @@
   "name": "Automated Volume Cleanup",
   "nodes": [
     {
+      "parameters": {},
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 300]
+    },
+    {
       "parameters": {
         "method": "POST",
         "url": "https://api.fly.io/graphql",
@@ -110,6 +117,17 @@
     }
   ],
   "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "List Volumes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "List Volumes": {
       "main": [
         [
