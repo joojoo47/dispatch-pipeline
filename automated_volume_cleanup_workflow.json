@@ -38,8 +38,14 @@
     {
       "parameters": {
         "functionCode": [
+          "// Check if input has JSON",
+          "const inputItem = $input.all()[0];",
+          "if (!inputItem || !inputItem.json) {",
+          "  return [{ json: { error: 'No JSON response from API' } }];",
+          "}",
+          "",
           "// Check if the response has data or errors",
-          "const response = $input.all()[0].json;",
+          "const response = inputItem.json;",
           "if (!response.data) {",
           "  return [{ json: { error: response } }];",
           "}",
