@@ -5,6 +5,11 @@ app = "n8n-dispatch-icy-surf-388"
 
 [env]
   DB_TYPE = "postgresdb"
+  DB_POSTGRESDB_HOST = "ep-soft-wave-ab54c4oo-pooler.eu-west-2.aws.neon.tech"
+  DB_POSTGRESDB_PORT = "5432"
+  DB_POSTGRESDB_DATABASE = "n8n_dispatch"
+  DB_POSTGRESDB_USER = "n8n_user"
+  DB_POSTGRESDB_PASSWORD = "npg_n8n_secure_password_2025"
   N8N_PORT = "5678"
   N8N_HOST = "0.0.0.0"
   N8N_PROTOCOL = "https"
