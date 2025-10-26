@@ -34,7 +34,11 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "response": {
+            "responseFormat": "json"
+          }
+        }
       },
       "name": "List Volumes",
       "type": "n8n-nodes-base.httpRequest",
