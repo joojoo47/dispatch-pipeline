@@ -17,7 +17,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $secrets.FLY_API_TOKEN || $env.FLY_API_TOKEN }}"
+              "value": "Bearer {{$secrets.FLY_API_TOKEN || $env.FLY_API_TOKEN}}"
             },
             {
               "name": "Content-Type",
