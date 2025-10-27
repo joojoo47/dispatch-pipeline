@@ -2,10 +2,19 @@
   "name": "Automated Volume Cleanup",
   "nodes": [
     {
-      "parameters": {},
-      "name": "Manual Trigger",
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyDay",
+              "hour": 2
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
       "position": [0, 300]
     },
     {
@@ -49,28 +58,18 @@
     {
       "parameters": {
         "functionCode": [
-          "// Minimal safe function to test data flow",
-          "try {",
-          "  const items = $input.all();",
-          "  console.log('Received items:', items);",
-          "  ",
-          "  // Always return at least one item with valid structure",
-          "  return [{",
-          "    json: {",
-          "      status: 'function_executed',",
-          "      input_count: items ? items.length : 0,",
-          "      has_data: items && items.length > 0 && items[0].json",
-          "    }",
-          "  }];",
-          "} catch (error) {",
-          "  console.log('Function error:', error);",
-          "  return [{",
-          "    json: {",
-          "      error: 'Function crashed',",
-          "      message: error.message",
-          "    }",
-          "  }];",
-          "}"
+          "// Access input to satisfy n8n's normalization requirements",
+          "const items = $input.all();",
+          "console.log('Function received', items.length, 'items from previous node');",
+          "",
+          "// Return simple test data",
+          "return [{",
+          "  json: {",
+          "    message: 'Function executed successfully',",
+          "    timestamp: new Date().toISOString(),",
+          "    input_items_received: items.length",
+          "  }",
+          "}];"
         ]
       },
       "name": "Filter Orphaned Volumes",
@@ -115,7 +114,7 @@
     }
   ],
   "connections": {
-    "Manual Trigger": {
+    "Schedule Trigger": {
       "main": [
         [
           {

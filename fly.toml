@@ -9,14 +9,15 @@ app = "n8n-dispatch-icy-surf-388"
   DB_POSTGRESDB_PORT = "5432"
   DB_POSTGRESDB_DATABASE = "n8n_dispatch"
   DB_POSTGRESDB_USER = "n8n_user"
-  DB_POSTGRESDB_PASSWORD = "npg_n8n_secure_password_2025"
-  FLY_API_TOKEN = "your_fly_api_token_here"
+  DB_POSTGRESDB_PASSWORD = "npg_4vSDZqJiOaC1"
+  FLY_API_TOKEN = "FlyV1 fm2_lJPECAAAAAAACmz1xBAYe89dB3aCBpNweN3DtPeEwrVodHRwczovL2FwaS5mbHkuaW8vdjGUAJLOABP2FR8Lk7lodHRwczovL2FwaS5mbHkuaW8vYWFhL3YxxDxG0lsUk+jRwRomUxG05CiO41rTMHi2OtQp0o+YAqnUDXICo25azf4XP9wJSxqTdB9nD1eMV9XB9TJiKEbETqu0S7JEXSYrjujtHd8l9Z/vY+xQOxVceNLSVh3NsHhSBxUe2KqFTsUKA6RxY2pRdhzqb7UCE55oWdTmGaZL2pGHVWWtlFeH9mcB/UybVsQghaLOVP85fTBa3n9vDheyDZLipSaypfMQZP8PgqvoUIk=,fm2_lJPETqu0S7JEXSYrjujtHd8l9Z/vY+xQOxVceNLSVh3NsHhSBxUe2KqFTsUKA6RxY2pRdhzqb7UCE55oWdTmGaZL2pGHVWWtlFeH9mcB/UybVsQQ5BcWVhhVW33MmoP2d40JyMO5aHR0cHM6Ly9hcGkuZmx5LmlvL2FhYS92MZgEks5o/q9szwAAAAEk9s2KF84AEwzfCpHOABMM3wzEEHns/CK4dxJadFmapCH1KNzEIEe+chMjKPvk4rJbjuzfuA2fZEiF3zsh0atcVeIwmhIZ"
   N8N_API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   N8N_PORT = "5678"
   N8N_HOST = "0.0.0.0"
   N8N_PROTOCOL = "https"
   WEBHOOK_URL = "https://n8n-dispatch-icy-surf-388.fly.dev"
   N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS = "true"
+  N8N_CONFIG_FILES = "/app/config/.n8n.json"
 
 [[services]]
   internal_port = 5678
