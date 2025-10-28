@@ -8,8 +8,10 @@ app = "n8n-dispatch-icy-surf-388"
   DB_POSTGRESDB_HOST = "ep-soft-wave-ab54c4oo-pooler.eu-west-2.aws.neon.tech"
   DB_POSTGRESDB_PORT = "5432"
   DB_POSTGRESDB_DATABASE = "n8n_dispatch"
-  DB_POSTGRESDB_USER = "neondb_owner"
-  DB_POSTGRESDB_PASSWORD = "npg_n8n_secure_password_2025"
+  DB_POSTGRESDB_USER = "retool_writer"
+  DB_POSTGRESDB_PASSWORD = "npg_aT13fOEwpdhM"
+  DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED = "false"
+  DB_POSTGRESDB_SSL_MODE = "require"
   FLY_API_TOKEN = "FlyV1 fm2_lJPECAAAAAAACmz1xBASyloP/1vgAd00yOaJ6agBwrVodHRwczovL2FwaS5mbHkuaW8vdjGWAJLOABP2FR8Lk7lodHRwczovL2FwaS5mbHkuaW8vYWFhL3YxxDznQ32TmV9JaSklfDHoIgCw3hhPnniQbJBUrTnVQXZC5un13f5TNm5L0RYwx+IwGzRlV5cfqBhpRE5fLmPETmgCAsSg+m8P8lTsSF9pw54j3DzPw4XkYtvHSjOj15UfOjf6Srrih7QehfxqQeBuYpdJu4PNmDInKlnLJj8Zlt3N7KAWRtBz2cr8aHKP4Q2SlAORgc4AqMTNHwWRgqdidWlsZGVyH6J3Zx8BxCDYQaCru/fGwJIhntCXcz0SlKPj79oFYv+e0TYjypzCCw==,fm2_lJPETmgCAsSg+m8P8lTsSF9pw54j3DzPw4XkYtvHSjOj15UfOjf6Srrih7QehfxqQeBuYpdJu4PNmDInKlnLJj8Zlt3N7KAWRtBz2cr8aHKP4cQQDfUpxxsSs4KGjcUuNjYf48O5aHR0cHM6Ly9hcGkuZmx5LmlvL2FhYS92MZgEks5o/xxczwAAAAEk9zp6F84AEwzfCpHOABMM3wzEEHvGquhHR6CIkSGNBcXTTgfEIDyeK5hxDUcP17vFonWu6L/ABWHTZdzK87Yw72OB57Yk"
   N8N_API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   N8N_PORT = "5678"
@@ -17,6 +19,11 @@ app = "n8n-dispatch-icy-surf-388"
   N8N_PROTOCOL = "https"
   WEBHOOK_URL = "https://n8n-dispatch-icy-surf-388.fly.dev"
   N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS = "true"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
 
 [[services]]
   internal_port = 5678
